@@ -1,5 +1,9 @@
-use std::path::Path;
-use std::error::Error;
+use std::{
+    path::Path,
+    io
+};
+
+use polars::prelude::*;
 
 fn read_it_all(path_to_excel: &str, sheetname: &str) -> Vec<Vec<String>> {
     let path = Path::new(path_to_excel);
@@ -30,7 +34,7 @@ fn read_it_all(path_to_excel: &str, sheetname: &str) -> Vec<Vec<String>> {
 fn convert_to_csv(
     container: Vec<Vec<String>>,
     path_to_csv: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> io::Result<()> {
     let mut wtr = csv::Writer::from_path(path_to_csv)?;
 
     for line in container {
@@ -47,4 +51,16 @@ pub fn excel2csv(path_to_excel: &str, sheetname: &str, path_to_csv: &str) {
         Ok(()) => println!("CSV written"),
         Err(r) => eprintln!("Error while writing CSV: {r}"),
     }
+}
+
+pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
+    // read from path
+    let df = CsvReader::from_path(path_to_csv)?
+                .infer_schema(None)
+                .has_header(true)
+                .finish()?;
+
+    println!("Dataframe COLUMNS: {:?}", df.get_column_names());
+
+    Ok(())
 }
