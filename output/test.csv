@@ -1,0 +1,12 @@
+column A1,column A2,column A3,column A4,column A5,column A6
+string 1,1,123456,text a,,"1,23"
+string 2,1,123457,text b,,"1,24"
+string 3,1,123458,text a,,"1,25"
+string 4,1,123459,text b,,"1,26"
+string 5,1,123460,text a,,"1,27"
+string 6,1,123461,text b,,"1,28"
+string 7,,,,,"1,29"
+string 8,,,,,"1,30"
+string 9,,,,,"1,31"
+string 10,,,,,"1,32"
+string 11,,,,,"1,33"
