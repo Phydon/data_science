@@ -60,7 +60,37 @@ pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
                 .has_header(true)
                 .finish()?;
 
-    println!("Dataframe COLUMNS: {:?}", df.get_column_names());
+    // println!("Dataframe COLUMNS: {:?}", df.get_column_names());
+
+    df.select(["column A1", "column A3", "column A4"])?;
+
+    // let sv: Vec<&Series> = df.columns(&["column A1", "column A3", "column A4"])?;
+    // // println!("sv COLUMNS: {:?}", sv);
+    
+    // A1: filter out where cell content == "wasd" is true
+    // A3: filter out where cell content starts with "888"
+    // TODO 
+    // possibility 1:
+    //      filter -> HOW??????????????
+    // possibility 2: 
+    //      use apply
+    //      set value in col A4 to 0, 
+    //      if value in col A1 == "wasd"
+    //      and 
+    //      if value in col A3 starts with "888"
+
+    // filter:
+    let mask_a1 = df.column("column A1")?
+        .is_not_null();
+
+    df.filter(&mask_a1)?;
+
+    // apply:
+
+    
+    // group the same values in col A3 together
+    // sum values in col A4 together grouped-by value from A3:
+
 
     Ok(())
 }
