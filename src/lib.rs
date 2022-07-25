@@ -55,7 +55,7 @@ pub fn excel2csv(path_to_excel: &str, sheetname: &str, path_to_csv: &str) {
 
 pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
     // read from path
-    let df = CsvReader::from_path(path_to_csv)?
+    let mut df = CsvReader::from_path(path_to_csv)?
                 .infer_schema(None)
                 .has_header(true)
                 .finish()?;
@@ -79,13 +79,21 @@ pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
     //      and 
     //      if value in col A3 starts with "888"
 
-    // filter:
-    let mask_a1 = df.column("column A1")?
-        .is_not_null();
+    // // filter:
+    // let mask_a1 = df.column("column A1")?
+    //     .is_not_null();
 
-    df.filter(&mask_a1)?;
+    // df.filter(&mask_a1)?;
 
     // apply:
+    let col_a1 = df.column("column A1")?;
+    let mask_a1 = col_a1.equal("wasd")? | col_a1.equal("qwertz")?;
+    df.try_apply("column A4", |val| {
+        val.i64()?
+        .set(&mask_a1, Some(0))
+    })?;
+        
+    println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
 
     
     // group the same values in col A3 together
