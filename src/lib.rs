@@ -54,7 +54,7 @@ pub fn excel2csv(path_to_excel: &str, sheetname: &str, path_to_csv: &str) {
 }
 
 pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
-    // read from path
+    // EAGER DF
     let mut df = CsvReader::from_path(path_to_csv)?
                 .infer_schema(None)
                 .has_header(true)
@@ -64,28 +64,9 @@ pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
 
     df.select(["column A1", "column A3", "column A4"])?;
 
-    // let sv: Vec<&Series> = df.columns(&["column A1", "column A3", "column A4"])?;
-    // // println!("sv COLUMNS: {:?}", sv);
-    
-    // A1: filter out where cell content == "wasd" is true
-    // A3: filter out where cell content starts with "888"
-    // TODO 
-    // possibility 1:
-    //      filter -> HOW??????????????
-    // possibility 2: 
-    //      use apply
-    //      set value in col A4 to 0, 
-    //      if value in col A1 == "wasd"
-    //      and 
-    //      if value in col A3 starts with "888"
 
-    // // filter:
-    // let mask_a1 = df.column("column A1")?
-    //     .is_not_null();
-
-    // df.filter(&mask_a1)?;
-
-    // apply:
+    // set value in column A4 to zero if 
+    // value in column A1 == "wasd" or "qwertz"
     let col_a1 = df.column("column A1")?;
     let mask_a1 = col_a1.equal("wasd")? | col_a1.equal("qwertz")?;
     df.try_apply("column A4", |val| {
@@ -93,11 +74,17 @@ pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
         .set(&mask_a1, Some(0))
     })?;
         
-    println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
+    // println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
 
-    
+
     // group the same values in col A3 together
     // sum values in col A4 together grouped-by value from A3:
+    let df_sum: DataFrame = df.groupby(["column A3"])?
+        .select(["column A4"])
+        .sum()?
+        .sort(["column A3"], false)?;
+
+    println!("Grouped-by: {:?}", df_sum);
 
 
     Ok(())
