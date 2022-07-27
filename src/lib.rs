@@ -1,6 +1,7 @@
 use std::{
     path::Path,
-    io
+    io,
+    collections::BTreeMap
 };
 
 use polars::prelude::*;
@@ -47,33 +48,37 @@ fn convert_to_csv(
 
 pub fn excel2csv(path_to_excel: &str, sheetname: &str, path_to_csv: &str) {
     let container = read_it_all(path_to_excel, sheetname);
-    match convert_to_csv(container, path_to_csv) {
-        Ok(()) => println!("CSV written"),
-        Err(r) => eprintln!("Error while writing CSV: {r}"),
-    }
+    convert_to_csv(container, path_to_csv).expect("Error while writing csv file {path_to_csv}");
 }
 
-pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
+fn set_value_to_zero<'a>(df: &'a mut DataFrame, column_with_pattern_name: &'a str, pattern_lst: Vec<&'a str>, column_to_apply: &'a str) -> Result<&'a DataFrame> {
+    // set value in "column_to_apply" to zero if 
+    // value in "column_with_pattern_name" matches "pattern"
+    for pattern in pattern_lst {
+        let col = df.column(column_with_pattern_name)?;
+        let mask = col.equal(pattern)?;
+        df.try_apply(column_to_apply, |val| {
+            val.i64()?
+            .set(&mask, Some(0))
+        })?;
+    }
+        
+    Ok(df)
+}
+
+pub fn transform_data_from_csv(path_to_csv: &str) -> Result<BTreeMap<i64,i64>> {
     // EAGER DF
     let mut df = CsvReader::from_path(path_to_csv)?
                 .infer_schema(None)
                 .has_header(true)
                 .finish()?;
-
     // println!("Dataframe COLUMNS: {:?}", df.get_column_names());
 
     df.select(["column A1", "column A3", "column A4"])?;
 
 
-    // set value in column A4 to zero if 
-    // value in column A1 == "wasd" or "qwertz"
-    let col_a1 = df.column("column A1")?;
-    let mask_a1 = col_a1.equal("wasd")? | col_a1.equal("qwertz")?;
-    df.try_apply("column A4", |val| {
-        val.i64()?
-        .set(&mask_a1, Some(0))
-    })?;
-        
+    let pattern = vec!["wasd", "qwertz"];
+    set_value_to_zero(&mut df, "column A1", pattern, "column A4").expect("Error while trying to set pattern to zero");
     // println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
 
 
@@ -83,9 +88,37 @@ pub fn get_dataframe_from_csv(path_to_csv: &str) -> Result<()> {
         .select(["column A4"])
         .sum()?
         .sort(["column A3"], false)?;
+    // println!("Grouped-by: {:?}", df_sum);
 
-    println!("Grouped-by: {:?}", df_sum);
+    // collect the grouped values and their sum in a BTreeMap 
+    // for later use
+    let mut vt_sum: BTreeMap<_,_> = BTreeMap::new();
+    let left_col = df_sum.column("column A3")?.i64()?;
+    let right_col = df_sum.column("column A4_sum")?.i64()?;
 
+    let mut sum_storage: Vec<_> = left_col.into_iter()
+        .zip(right_col.into_iter())
+        .map(|(left_it, right_it)| match (left_it, right_it) {
+            (Some(l), Some(r)) => vt_sum.insert(l, r),
+            _ => None,
+        })
+        .collect();
 
+    sum_storage.clear();
+    // println!("btreemap: {:?}", vt_sum);
+
+    Ok(vt_sum)
+}
+
+pub fn write_data_to_csv(container: BTreeMap<i64,i64>, path_to_csv_data: &str) -> io::Result<()> {
+    let mut wtr = csv::Writer::from_path(path_to_csv_data)?;
+
+    for (k,v) in container {
+        let tmp = vec![k.to_string(), v.to_string()];
+        wtr.write_record(&tmp)?;
+    }
+
+    wtr.flush()?;
     Ok(())
+
 }
