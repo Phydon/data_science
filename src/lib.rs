@@ -77,8 +77,12 @@ pub fn transform_data_from_csv(path_to_csv: &str) -> Result<BTreeMap<i64,i64>> {
     df.select(["column A1", "column A3", "column A4"])?;
 
 
-    let pattern = vec!["wasd", "qwertz"];
-    set_value_to_zero(&mut df, "column A1", pattern, "column A4").expect("Error while trying to set pattern to zero");
+    let pattern1 = vec!["wasd", "qwertz"];
+    set_value_to_zero(&mut df, "column A1", pattern1, "column A4").expect("Error while trying to set pattern to zero");
+    // println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
+
+    let pattern2 = vec!["W154_1000"];
+    set_value_to_zero(&mut df, "column A2", pattern2, "column A4").expect("Error while trying to set pattern to zero");
     // println!("wasd & qwertz => {:?}", df.column("column A4").unwrap());
 
 
